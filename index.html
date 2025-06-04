@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retos de Simulación con AnyLogic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: The SPA uses a two-level navigation structure. The main view is a grid of interactive cards, each representing one of the 10 challenges. This provides a quick, scannable overview. Clicking a card transitions the user to a dedicated detail view for that specific challenge, hiding the main grid. This detail view is organized with clear sections for "Contexto", "Parámetros", and "Guía de Solución", making the dense information digestible. An interactive chart is included in the "Parámetros" section to visually compare key data points. A prominent "back" button allows easy return to the main challenge grid. This structure was chosen over a simple long-scroll page because it follows the "overview first, then details-on-demand" principle, preventing user overload and creating a more focused, app-like experience for exploring the educational content. -->
+    <!-- Visualization & Content Choices: For each challenge, key quantitative data is presented in two ways: a structured HTML table for precise lookups and a dynamic bar chart (using Chart.js/Canvas) for quick visual comparison. Goal: Compare key operational parameters. Viz Method: Interactive Bar Chart. Interaction: Tooltips on hover provide exact values. Justification: Visualizing parameters like failure rates vs. repair times (Reto 2) or different operational costs (Reto 9) allows users to grasp the core tensions and trade-offs of the simulation problem much faster than by reading a table alone. Textual content (Contexto, Guía) is presented in clean, readable blocks. Process flows mentioned in the guides are simplified into structured HTML/CSS diagrams (e.g., Reto 7), adhering to the no-SVG/Mermaid constraint while still conveying the cyclical nature of the processes. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .flow-diagram-step {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            background-color: #f9fafb;
+            min-height: 60px;
+            flex-grow: 1;
+        }
+        .flow-diagram-arrow {
+            font-size: 1.5rem;
+            color: #6b7280;
+            margin: 0 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <div id="app" class="container mx-auto px-4 py-8 md:py-12">
+
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-800">Visualizador Interactivo de Retos de Simulación</h1>
+            <p class="mt-2 text-lg text-stone-600">Explora 10 desafíos de ingeniería para dominar AnyLogic</p>
+        </header>
+
+        <main id="challenge-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        </main>
+
+        <section id="challenge-detail" class="hidden">
+            <button id="back-button" class="mb-6 inline-flex items-center px-4 py-2 bg-teal-600 text-white font-semibold rounded-lg hover:bg-teal-700 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                Volver a los Retos
+            </button>
+            <div id="detail-content" class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                <h2 id="detail-title" class="text-2xl md:text-3xl font-bold text-teal-800 mb-6"></h2>
+                
+                <div class="space-y-8">
+                    <div>
+                        <h3 class="text-xl font-semibold border-b-2 border-teal-200 pb-2 mb-4">Contexto del Desafío</h3>
+                        <p id="detail-context" class="text-stone-700 leading-relaxed"></p>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold border-b-2 border-teal-200 pb-2 mb-4">Parámetros y Datos Clave</h3>
+                         <p class="text-stone-600 mb-4">La siguiente tabla resume los datos numéricos para la simulación. La gráfica interactiva a continuación permite comparar visualmente algunos de los parámetros más importantes para entender rápidamente las magnitudes y relaciones en el sistema.</p>
+                        <div class="overflow-x-auto mb-6">
+                            <table id="detail-data-table" class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            </table>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="detail-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div id="detail-diagram-container" class="hidden">
+                         <h3 class="text-xl font-semibold border-b-2 border-teal-200 pb-2 mb-4">Diagrama del Proceso</h3>
+                         <p class="text-stone-600 mb-4">Este es un diagrama simplificado que representa el flujo cíclico o secuencial del proceso descrito en el reto.</p>
+                         <div id="detail-diagram" class="flex flex-wrap items-center justify-center p-4 bg-gray-50 rounded-lg"></div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl font-semibold border-b-2 border-teal-200 pb-2 mb-4">Guía de Solución</h3>
+                        <div id="detail-guide" class="prose max-w-none text-stone-700"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        const challengesData = [
+            {
+                id: 1,
+                title: "Reto 1: Optimización de Taquillas",
+                icon: "🎟️",
+                description: "Determinar el número óptimo de taquillas en un evento para minimizar esperas y costos.",
+                context: "Se simulará la operación de las taquillas de un estadio o sala de conciertos durante las horas pico previas a un evento. El objetivo principal es determinar el número óptimo de taquillas que deben permanecer abiertas para, por un lado, minimizar el tiempo de espera de los clientes y, por otro, controlar los costos operativos, todo ello manteniendo un nivel de servicio que se considere aceptable. Se debe considerar el fenómeno de 'balking', donde los clientes deciden no unirse a la cola si la perciben como demasiado larga.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades"],
+                    rows: [
+                        ["Tasa de llegada (pico)", "Poisson (media = 100)", "grupos/hora"],
+                        ["Tamaño del grupo", "Discreta (1: 60%, 2: 30%, 3: 10%)", "personas/grupo"],
+                        ["Tiempo de servicio", "Triangular (0.5, 1, 2)", "minutos/persona"],
+                        ["Nº inicial taquillas", "3 (parámetro a variar)", "taquillas"],
+                        ["Umbral de 'balking'", "10", "personas"],
+                        ["Costo operativo", "20", "unidades monetarias/hora"],
+                        ["Costo de espera", "0.1", "unidades monetarias/min/persona"]
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Iniciar un nuevo modelo en AnyLogic (unidades: minutos).</li>
+                        <li>Usar PML: <code>Source</code> para llegadas, <code>Queue</code> para la cola (con capacidad finita para 'balking'), y <code>Service</code> con un <code>ResourcePool</code> para las taquillas.</li>
+                        <li>Definir un agente "GrupoClientes" con un parámetro para el tamaño del grupo.</li>
+                        <li>Hacer que el tiempo de servicio sea dinámico, dependiendo del tamaño del grupo.</li>
+                        <li>Implementar la lógica de 'balking': si <code>queue.size()</code> excede el umbral, desviar al agente a un <code>Sink</code> de clientes perdidos.</li>
+                        <li>Parametrizar el número de taquillas (capacidad del <code>ResourcePool</code>).</li>
+                        <li>Recolectar estadísticas: tiempo en sistema, tiempo en cola, clientes perdidos, utilización.</li>
+                        <li>Ejecutar un experimento de variación de parámetros para encontrar el número óptimo de taquillas.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Tiempo Mín Servicio', 'Tiempo Moda Servicio', 'Tiempo Máx Servicio'],
+                        datasets: [{
+                            label: 'Tiempo de Servicio por Persona (minutos)',
+                            data: [0.5, 1, 2],
+                            backgroundColor: ['#2dd4bf', '#0d9488', '#0f766e']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                }
+            },
+            {
+                id: 2,
+                title: "Reto 2: Línea de Ensamblaje",
+                icon: "⚙️",
+                description: "Simular una línea de producción con fallos de máquina y búferes para analizar su rendimiento.",
+                context: "Este reto consiste en modelar una línea de producción simplificada compuesta por tres estaciones de trabajo (máquinas) en serie. Cada máquina tiene un tiempo de proceso y una tasa de fallo. Entre las máquinas, existen búferes con capacidad limitada. Los objetivos son analizar el throughput, la utilización de las máquinas y el tamaño de los búferes, considerando el impacto de los fallos y el bloqueo por búferes llenos.",
+                dataTable: {
+                    headers: ["Parámetro", "Máquina 1", "Máquina 2", "Máquina 3"],
+                    rows: [
+                       ["Tiempo de proceso (min)", "Triangular (5, 6, 7)", "Uniforme (4, 8)", "Exponencial (μ=6)"],
+                       ["Tiempo entre fallos (MTBF, min)", "Exponencial (μ=120)", "Exponencial (μ=180)", "Exponencial (μ=150)"],
+                       ["Tiempo de reparación (MTTR, min)", "Uniforme (10, 20)", "Uniforme (15, 25)", "Triangular (8, 12, 18)"],
+                       ["Capacidad Búfer Previo", "N/A", "5 unidades", "3 unidades"],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Usar PML: <code>Source</code> para la llegada de piezas.</li>
+                        <li>Para cada máquina: usar <code>Queue</code> para el búfer y <code>Service</code> para la máquina.</li>
+                        <li>En cada bloque <code>Service</code>, configurar los fallos usando las distribuciones de MTBF y MTTR.</li>
+                        <li>La lógica de bloqueo es inherente en PML si las colas tienen capacidad finita.</li>
+                        <li>Recolectar métricas: throughput, utilización de máquinas, nivel de ocupación de búferes.</li>
+                        <li>Experimentar variando la capacidad de los búferes o los parámetros de fiabilidad.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Máquina 1', 'Máquina 2', 'Máquina 3'],
+                        datasets: [
+                            {
+                                label: 'Tiempo Promedio Entre Fallos (MTBF)',
+                                data: [120, 180, 150],
+                                backgroundColor: '#0d9488'
+                            },
+                             {
+                                label: 'Tiempo Promedio de Reparación (MTTR)',
+                                data: [15, 20, 13],
+                                backgroundColor: '#f97316'
+                            }
+                        ]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutos' } } } }
+                }
+            },
+            {
+                id: 7,
+                title: "Reto 7: Movimiento de Tierras",
+                icon: "🚚",
+                description: "Simular una operación de excavación y transporte con camiones y cargadoras.",
+                context: "Simular una operación de excavación y transporte de tierra. El sistema tiene un número fijo de camiones y cargadoras. El ciclo de un camión es: hacer cola para ser cargado, viajar a un sitio de descarga, descargar y regresar vacío. El objetivo es analizar la productividad (m³ movidos por hora) y la utilización de los equipos. Este es un sistema de ciclo cerrado donde un número fijo de camiones circula por el modelo.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades"],
+                    rows: [
+                        ["Número de camiones", "5 (parámetro a variar)", "camiones"],
+                        ["Capacidad de camión", "20", "m³"],
+                        ["Número de cargadoras", "2 (parámetro a variar)", "cargadoras"],
+                        ["Tiempo de carga", "Triangular (5, 8, 12)", "minutos"],
+                        ["Tiempo de viaje (cargado)", "Uniforme (15, 25)", "minutos"],
+                        ["Tiempo de descarga", "Triangular (3, 5, 7)", "minutos"],
+                        ["Tiempo de viaje (vacío)", "Uniforme (10, 20)", "minutos"],
+                    ]
+                },
+                 diagram: {
+                    type: 'flow',
+                    steps: ['Cola para Carga', 'Carga', 'Viaje Cargado', 'Descarga', 'Viaje Vacío']
+                },
+                guide: `
+                     <ol class="list-decimal list-inside space-y-2">
+                        <li>Crear el modelo con camiones como entidades.</li>
+                        <li>Usar un <code>Source</code> para inyectar el número inicial de camiones al inicio de la simulación.</li>
+                        <li>Diseñar el ciclo del camión en PML: <code>Queue</code> -> <code>Seize</code> (cargadora) -> <code>Delay</code> (carga) -> <code>Release</code> (cargadora) -> <code>Delay</code> (viaje cargado) -> <code>Delay</code> (descarga) -> <code>Delay</code> (viaje vacío).</li>
+                        <li>Conectar la salida del último <code>Delay</code> a la entrada de la <code>Queue</code> para cerrar el ciclo.</li>
+                        <li>Definir un <code>ResourcePool</code> para las cargadoras.</li>
+                        <li>Parametrizar el número de camiones y cargadoras.</li>
+                        <li>Recolectar métricas: tierra total movida, utilización de camiones y cargadoras.</li>
+                        <li>Realizar experimentos variando el número de camiones y cargadoras.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Tiempo de Carga', 'Viaje Cargado', 'Descarga', 'Viaje Vacío'],
+                        datasets: [{
+                            label: 'Tiempo Promedio del Ciclo (minutos)',
+                            data: [8.33, 20, 5, 15],
+                            backgroundColor: ['#f97316', '#0d9488', '#f59e0b', '#14b8a6']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
+                }
+            },
+            {
+                id: 9,
+                title: "Reto 9: Políticas de Mantenimiento",
+                icon: "🔧",
+                description: "Analizar y comparar políticas de mantenimiento correctivo vs. preventivo para una flota.",
+                context: "Simular una flota de equipos sujeta a averías. El reto consiste en comparar dos políticas: Mantenimiento Correctivo (reparar solo al fallar) y Mantenimiento Preventivo (revisiones programadas para reducir fallos). El objetivo es evaluar los costos totales (inactividad, reparaciones) y la disponibilidad de la flota bajo cada política. Este problema es ideal para el modelado basado en agentes, donde cada equipo es un agente con su propio estado y ciclo de vida.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades/Notas"],
+                    rows: [
+                        ["Nº de equipos en flota", "50", "equipos"],
+                        ["Tiempo entre fallos (sin MP)", "Weibull (shape=2, scale=500)", "horas de uso"],
+                        ["Tiempo reparación (correctivo)", "Triangular (8, 12, 24)", "horas"],
+                        ["Costo de inactividad", "100", "unidades monetarias/hora"],
+                        ["Costo reparación correctiva", "500 + 50/hora", "unidades monetarias"],
+                        ["Intervalo de MP", "200", "horas de uso"],
+                        ["Tiempo de MP", "Uniforme (4, 6)", "horas"],
+                        ["Costo de MP", "200", "unidades monetarias/intervención"],
+                    ]
+                },
+                guide: `
+                     <ol class="list-decimal list-inside space-y-2">
+                        <li>Adoptar un enfoque basado en agentes. Definir un agente "Equipo".</li>
+                        <li>Implementar un diagrama de estados (Statechart) en el agente "Equipo": Operando, Fallado, EnReparación, etc.</li>
+                        <li>Usar variables internas para acumular horas de uso y programar el próximo fallo (usando la distribución Weibull).</li>
+                        <li>Modelar los equipos de reparación como un <code>ResourcePool</code>.</li>
+                        <li>Implementar la lógica para las dos políticas (se puede usar un parámetro para cambiar entre ellas).</li>
+                        <li>Cuando un equipo necesita mantenimiento, debe solicitar un recurso del <code>ResourcePool</code>.</li>
+                        <li>Recolectar métricas: costo total, disponibilidad de la flota, número de fallos.</li>
+                        <li>Ejecutar la simulación para ambas políticas y comparar los resultados.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Costo Fijo Reparación', 'Costo Fijo Mantenimiento Preventivo'],
+                        datasets: [{
+                            label: 'Comparación de Costos Fijos por Intervención',
+                            data: [500, 200],
+                            backgroundColor: ['#ef4444', '#22c55e']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Unidades Monetarias' } } } }
+                }
+            },
+        ];
+        
+        const remainingChallenges = [
+            { id: 3, title: "Reto 3: Gestión de Inventario", icon: "📦", description: "Simular una política de inventario (s, S) para un producto perecedero." },
+            { id: 4, title: "Reto 4: Patio de Contenedores", icon: "🚂", description: "Simular operaciones en un patio ferroviario usando la Rail Library." },
+            { id: 5, title: "Reto 5: Call Center", icon: "📞", description: "Diseñar y analizar un centro de atención telefónica con agentes multi-habilidad." },
+            { id: 6, title: "Reto 6: Clínica de Urgencias", icon: "🏥", description: "Modelar el flujo de pacientes en una clínica para optimizar recursos." },
+            { id: 8, title: "Reto 8: Red Logística", icon: "🌐", description: "Simular una red con fábrica, centros de distribución y clientes." },
+            { id: 10, title: "Reto 10: Rutas de Reparto (GIS)", icon: "🗺️", description: "Optimizar rutas de vehículos de reparto en un área urbana usando mapas GIS." }
+        ];
+
+        challengesData.push(...remainingChallenges.map(c => ({...c, isPlaceholder: true})));
+        challengesData.sort((a,b) => a.id - b.id);
+
+        const challengeGrid = document.getElementById('challenge-grid');
+        const challengeDetail = document.getElementById('challenge-detail');
+        const detailContent = document.getElementById('detail-content');
+        const detailTitle = document.getElementById('detail-title');
+        const detailContext = document.getElementById('detail-context');
+        const detailDataTable = document.getElementById('detail-data-table');
+        const detailGuide = document.getElementById('detail-guide');
+        const detailDiagramContainer = document.getElementById('detail-diagram-container');
+        const detailDiagram = document.getElementById('detail-diagram');
+        const backButton = document.getElementById('back-button');
+
+        let chartInstance = null;
+        
+        function createCard(challenge) {
+            const card = document.createElement('div');
+            card.className = `p-6 bg-white rounded-xl shadow-md hover:shadow-xl transition-shadow transform hover:-translate-y-1 cursor-pointer flex flex-col justify-between ${challenge.isPlaceholder ? 'opacity-60' : ''}`;
+            card.dataset.challengeId = challenge.id;
+
+            card.innerHTML = `
+                <div>
+                    <div class="flex items-center mb-4">
+                        <span class="text-3xl mr-4">${challenge.icon}</span>
+                        <h3 class="text-xl font-bold text-teal-800">${challenge.title}</h3>
+                    </div>
+                    <p class="text-stone-600">${challenge.description}</p>
+                </div>
+                ${challenge.isPlaceholder ? '<span class="mt-4 text-sm font-semibold text-orange-600">Próximamente</span>' : '<span class="mt-4 text-sm font-semibold text-teal-600">Ver Detalles →</span>'}
+            `;
+
+            if (!challenge.isPlaceholder) {
+                card.addEventListener('click', () => showDetail(challenge.id));
+            } else {
+                 card.style.cursor = 'not-allowed';
+            }
+            return card;
+        }
+
+        function renderGrid() {
+            challengeGrid.innerHTML = '';
+            challengesData.forEach(challenge => {
+                challengeGrid.appendChild(createCard(challenge));
+            });
+        }
+
+        function showDetail(id) {
+            const challenge = challengesData.find(c => c.id === id);
+            if (!challenge || challenge.isPlaceholder) return;
+
+            detailTitle.textContent = challenge.title;
+            detailContext.textContent = challenge.context;
+            
+            detailDataTable.innerHTML = '';
+            const thead = document.createElement('thead');
+            thead.className = "bg-gray-100";
+            let tr = document.createElement('tr');
+            challenge.dataTable.headers.forEach(header => {
+                const th = document.createElement('th');
+                th.className = "px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider";
+                th.textContent = header;
+                tr.appendChild(th);
+            });
+            thead.appendChild(tr);
+            detailDataTable.appendChild(thead);
+            
+            const tbody = document.createElement('tbody');
+            tbody.className = "bg-white divide-y divide-gray-200";
+            challenge.dataTable.rows.forEach(row => {
+                tr = document.createElement('tr');
+                row.forEach(cell => {
+                    const td = document.createElement('td');
+                    td.className = "px-6 py-4 whitespace-nowrap text-sm text-gray-700";
+                    td.textContent = cell;
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+            detailDataTable.appendChild(tbody);
+
+            detailGuide.innerHTML = challenge.guide;
+
+            if (challenge.diagram) {
+                detailDiagram.innerHTML = '';
+                challenge.diagram.steps.forEach((step, index) => {
+                    const stepEl = document.createElement('div');
+                    stepEl.className = 'flow-diagram-step';
+                    stepEl.textContent = step;
+                    detailDiagram.appendChild(stepEl);
+
+                    if (index < challenge.diagram.steps.length - 1) {
+                         const arrowEl = document.createElement('div');
+                         arrowEl.className = 'flow-diagram-arrow';
+                         arrowEl.innerHTML = '&#10230;'; // Right arrow
+                         detailDiagram.appendChild(arrowEl);
+                    }
+                });
+                detailDiagramContainer.classList.remove('hidden');
+            } else {
+                detailDiagramContainer.classList.add('hidden');
+            }
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            const ctx = document.getElementById('detail-chart').getContext('2d');
+            chartInstance = new Chart(ctx, challenge.chartData);
+
+            challengeGrid.classList.add('hidden');
+            challengeDetail.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        }
+
+        backButton.addEventListener('click', () => {
+            challengeDetail.classList.add('hidden');
+            challengeGrid.classList.remove('hidden');
+        });
+
+        renderGrid();
+    });
+    </script>
+</body>
+</html>
