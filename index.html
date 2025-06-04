@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Retos de Simulación con AnyLogic</title>
+    <title>Retos de Simulación</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -35,16 +35,16 @@
             justify-content: center;
             text-align: center;
             padding: 0.75rem 1rem;
-            border: 1px solid #d1d5db;
-            border-radius: 0.5rem;
-            background-color: #f9fafb;
+            border: 1px solid #d1d5db; /* border-gray-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            background-color: #f9fafb; /* bg-gray-50 */
             min-height: 60px;
             flex-grow: 1;
         }
         .flow-diagram-arrow {
-            font-size: 1.5rem;
-            color: #6b7280;
-            margin: 0 0.5rem;
+            font-size: 1.5rem; /* text-2xl */
+            color: #6b7280; /* text-gray-500 */
+            margin: 0 0.5rem; /* mx-2 */
         }
     </style>
 </head>
@@ -53,8 +53,9 @@
     <div id="app" class="container mx-auto px-4 py-8 md:py-12">
 
         <header class="text-center mb-10">
-            <h1 class="text-3xl md:text-4xl font-bold text-teal-800">Visualizador Interactivo de Retos de Simulación</h1>
-            <p class="mt-2 text-lg text-stone-600">Explora 10 desafíos de ingeniería para dominar AnyLogic</p>
+            <h1 class="text-3xl md:text-4xl font-bold text-teal-800">Retos de Simulación</h1>
+            <p class="mt-3 text-lg text-stone-700">¡Bienvenido! Explora estos 10 desafíos de ingeniería diseñados para fortalecer tus habilidades en modelado y simulación.</p>
+            <p class="mt-1 text-md text-stone-600">Estos retos están orientados principalmente para AnyLogic, pero también pueden adaptarse para FlexSim u otros software de simulación.</p>
         </header>
 
         <main id="challenge-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -147,7 +148,8 @@
                         }]
                     },
                     options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-                }
+                },
+                isPlaceholder: false
             },
             {
                 id: 2,
@@ -186,13 +188,197 @@
                             },
                              {
                                 label: 'Tiempo Promedio de Reparación (MTTR)',
-                                data: [15, 20, 13],
+                                data: [15, 20, 13], // MTTR averages: (10+20)/2=15, (15+25)/2=20, (8+12+18)/3=12.66 ~ 13
                                 backgroundColor: '#f97316'
                             }
                         ]
                     },
                     options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Minutos' } } } }
-                }
+                },
+                isPlaceholder: false
+            },
+            {
+                id: 3,
+                title: "Reto 3: Gestión de Inventario",
+                icon: "📦",
+                description: "Simular una política de inventario (s, S) para un producto perecedero.",
+                context: "Este reto se centra en la simulación de un sistema de gestión de inventario para un único producto perecedero utilizando una política de revisión periódica (s, S). El nivel de inventario se revisa a intervalos fijos. Si cae por debajo de 's', se pide hasta 'S'. Se considera la demanda estocástica, la vida útil del producto y costos de pedido, mantenimiento, falta de stock y desecho. El objetivo es encontrar 's' y 'S' óptimos.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades", "Notas"],
+                    rows: [
+                        ["Demanda diaria", "Poisson (media = 20)", "unidades/día", ""],
+                        ["Intervalo de revisión", "7", "días", ""],
+                        ["Punto de reorden (s)", "30 (parámetro a variar)", "unidades", "Rango: 10-50"],
+                        ["Nivel objetivo (S)", "100 (parámetro a variar)", "unidades", "Rango: 80-150"],
+                        ["Costo de pedido", "50", "unidades monetarias/pedido", ""],
+                        ["Costo de mantenimiento", "0.5", "unidades monetarias/unidad/día", "Inventario promedio"],
+                        ["Costo de falta de stock", "10", "unidades monetarias/unidad", "Venta perdida"],
+                        ["Vida útil del producto", "5", "días", "Desde recepción"],
+                        ["Costo de desecho", "2", "unidades monetarias/unidad", ""],
+                        ["Tiempo de entrega proveedor", "Uniforme (2, 4)", "días", ""],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Usar modelado basado en agentes o lógica de eventos discretos. PML para llegadas de clientes.</li>
+                        <li>Variables: <code>nivelInventarioActual</code>, <code>inventarioEnTransito</code>. Colección para lotes (<code>cantidad</code>, <code>fechaCaducidad</code>).</li>
+                        <li>Eventos: <code>LlegadaCliente</code> (satisface demanda FIFO por caducidad, registra falta de stock), <code>RevisionInventario</code> (pide si inv < s hasta S), <code>LlegadaPedido</code> (actualiza inventario y lotes), <code>FinDia</code> (actualiza vida útil, desecha caducados, calcula costo mantenimiento).</li>
+                        <li>Acumular costos: pedidos, mantenimiento, falta de stock, desecho.</li>
+                        <li>Usar optimización de AnyLogic para minimizar costo total variando 's' y 'S'.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Punto de Reorden (s) Inicial', 'Nivel Objetivo (S) Inicial'],
+                        datasets: [{
+                            label: 'Parámetros de Política de Inventario (Unidades)',
+                            data: [30, 100],
+                            backgroundColor: ['#fbbf24', '#34d399']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
+            },
+            {
+                id: 4,
+                title: "Reto 4: Patio de Contenedores",
+                icon: "🚂",
+                description: "Simular operaciones en un patio ferroviario usando la Rail Library.",
+                context: "Modelar un patio ferroviario donde los trenes llegan, se descomponen, los vagones se clasifican y se forman nuevos trenes. Se usará la Rail Library de AnyLogic para definir vías, desvíos y movimiento de trenes/vagones. El objetivo es analizar capacidad, tiempos de procesamiento y utilización de vías.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades", "Notas"],
+                    rows: [
+                        ["Tasa llegada trenes", "Exponencial (media = 120)", "minutos", ""],
+                        ["Nº vagones/tren", "Uniforme discreto (20, 30)", "vagones", ""],
+                        ["Tipos de vagones", "3 tipos (A, B, C)", "-", "Asignación aleatoria"],
+                        ["Vías de clasificación", "5 vías", "vías", "Longitud 600m c/u"],
+                        ["Tiempo desacople vagón", "Triangular (0.5, 1, 1.5)", "minutos", ""],
+                        ["Tiempo acople vagón", "Triangular (0.8, 1.2, 1.8)", "minutos", ""],
+                        ["Criterio formación tren A", "15 vagones tipo A", "vagones", ""],
+                        ["Criterio formación tren B", "10 vagones tipo B", "vagones", ""],
+                        ["Criterio formación tren C", "12 vagones tipo C", "vagones", ""],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Activar Rail Library. Dibujar topología: vía llegada, desvíos, 5 vías clasificación, vía salida.</li>
+                        <li>Agentes: <code>TrenEntrante</code> (con población <code>Vagon</code>), <code>Vagon</code> (atributos: tipo, destino), <code>TrenSaliente</code>.</li>
+                        <li>Usar <code>TrainSource</code> para llegadas.</li>
+                        <li>Bloques Rail Library: <code>TrainMoveTo</code>, <code>TrainDecouple</code>, <code>TrainCouple</code>.</li>
+                        <li>Lógica para locomotora de maniobras (recurso o agente).</li>
+                        <li>Lógica de formación de trenes de salida según criterios.</li>
+                        <li>Métricas: tiempo de tren en patio, utilización vías, trenes procesados.</li>
+                        <li>Desarrollar animación 2D/3D para verificación.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Mín Vagones/Tren', 'Máx Vagones/Tren', 'Vagones Tren A', 'Vagones Tren B', 'Vagones Tren C'],
+                        datasets: [{
+                            label: 'Configuración de Vagones y Formación de Trenes',
+                            data: [20, 30, 15, 10, 12],
+                            backgroundColor: ['#0ea5e9', '#0ea5e9', '#84cc16', '#84cc16', '#84cc16']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
+            },
+            {
+                id: 5,
+                title: "Reto 5: Call Center",
+                icon: "📞",
+                description: "Diseñar y analizar un centro de atención telefónica con agentes multi-habilidad.",
+                context: "Simular un call center que gestiona llamadas de diferentes tipos (ventas, soporte, facturación) con agentes de habilidades específicas. El objetivo es determinar la dotación óptima de personal para cumplir niveles de servicio (e.g., 80% llamadas atendidas en 20s) considerando la paciencia del cliente y abandonos.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades", "Notas"],
+                    rows: [
+                        ["Tasa llegada llamadas", "Poisson (media=200/hr, varía)", "llamadas/hora", "Usar Schedule"],
+                        ["Distribución consultas", "Ventas: 40%, Soporte: 35%, Fact.: 25%", "%", ""],
+                        ["Tiempo atención Ventas", "LogNormal(5, 1.5)", "minutos", ""],
+                        ["Tiempo atención Soporte", "LogNormal(8, 2)", "minutos", ""],
+                        ["Tiempo atención Facturación", "LogNormal(4, 1)", "minutos", ""],
+                        ["Nº agentes Ventas", "10 (parámetro a variar)", "agentes", "Rango: 5-15"],
+                        ["Nº agentes Soporte", "8 (parámetro a variar)", "agentes", "Rango: 4-12"],
+                        ["Nº agentes Facturación", "6 (parámetro a variar)", "agentes", "Rango: 3-10"],
+                        ["Paciencia cliente (cola)", "Exponencial (media = 5)", "minutos", "Para abandono"],
+                        ["Tiempo post-llamada", "Triangular (0.5, 0.8, 1.2)", "minutos", ""],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Usar PML. <code>Source</code> con <code>Schedule</code> para llegadas. Agente "Llamada" (atributos: tipoConsulta, horaLlegada).</li>
+                        <li><code>SelectOutput</code> para dirigir llamadas por tipo.</li>
+                        <li>Para cada tipo: <code>Queue</code>, <code>Service</code>. <code>ResourcePool</code> para cada grupo de agentes (Ventas, Soporte, Facturación).</li>
+                        <li>Implementar abandono (<code>Timeout</code> en <code>Queue</code> o evento en agente).</li>
+                        <li>Modelar tiempo "wrap-up" (<code>Delay</code> adicional tras liberar agente).</li>
+                        <li>Métricas: Nivel de servicio (e.g., % atendidas en <20s), tasa abandono, utilización agentes, tiempos espera, longitud colas.</li>
+                        <li>Experimentar con dotación de personal y/o enrutamiento basado en habilidades.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Agentes Ventas (Inicial)', 'Agentes Soporte (Inicial)', 'Agentes Facturación (Inicial)'],
+                        datasets: [{
+                            label: 'Dotación Inicial de Agentes por Habilidad',
+                            data: [10, 8, 6],
+                            backgroundColor: ['#14b8a6', '#f97316', '#6366f1']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
+            },
+            {
+                id: 6,
+                title: "Reto 6: Clínica de Urgencias",
+                icon: "🏥",
+                description: "Modelar el flujo de pacientes en una clínica para optimizar recursos.",
+                context: "Simular el flujo de pacientes en una clínica de urgencias: registro, triaje (asignación de urgencia), espera, consulta médica (requiere médico y sala), y alta. El objetivo es analizar tiempos de espera, duración de estancia y utilización de recursos (personal, salas) para identificar cuellos de botella.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Distribución", "Unidades", "Notas"],
+                    rows: [
+                        ["Tasa llegada pacientes", "Poisson (media=10/hr, varía)", "pacientes/hr", "Usar Schedule"],
+                        ["Niveles urgencia", "Urgente: 20%, Semi-U: 50%, No U: 30%", "%", "Asignar en triaje"],
+                        ["Tiempo Registro", "Uniforme (2, 5)", "minutos", ""],
+                        ["Tiempo Triaje", "Triangular (3, 5, 8)", "minutos", ""],
+                        ["Tiempo Consulta (Urgente)", "LogNormal(30,10)", "minutos", ""],
+                        ["Tiempo Consulta (Semi-U)", "LogNormal(20,5)", "minutos", ""],
+                        ["Tiempo Consulta (No Urg.)", "LogNormal(15,5)", "minutos", ""],
+                        ["Puestos registro", "2", "puestos", ""],
+                        ["Enfermeras triaje", "3", "enfermeras", ""],
+                        ["Médicos", "4 (parámetro a variar)", "médicos", "Rango: 2-6"],
+                        ["Salas examen", "6", "salas", "Paciente necesita sala Y médico"],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Usar PML. <code>Source</code> con <code>Schedule</code>. Agente "Paciente" (atributos: nivelUrgencia, horaLlegadaTotal).</li>
+                        <li>Flujo: Registro (<code>Service</code> con RecursoPersonalRegistro), Triaje (<code>Service</code> con RecursoEnfermerasTriaje, asignar nivelUrgencia).</li>
+                        <li>Cola para médico (<code>Queue</code> con prioridades por nivelUrgencia).</li>
+                        <li>Atención médica: <code>Seize</code> para Médico Y SalaExamen, <code>Delay</code> (tiempo consulta según urgencia), <code>Release</code> de ambos recursos. <code>Sink</code> para salida.</li>
+                        <li>Parametrizar número de médicos y/o salas.</li>
+                        <li>Métricas: Tiempo estancia total, tiempos espera (triaje, médico por urgencia), utilización personal y salas.</li>
+                        <li>Considerar optimización para minimizar costos o cumplir objetivos de espera.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Puestos Registro', 'Enfermeras Triaje', 'Médicos (Inicial)', 'Salas Examen'],
+                        datasets: [{
+                            label: 'Recursos Iniciales de la Clínica',
+                            data: [2, 3, 4, 6],
+                            backgroundColor: ['#a855f7', '#ec4899', '#22c55e', '#f59e0b']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
             },
             {
                 id: 7,
@@ -219,7 +405,7 @@
                 guide: `
                      <ol class="list-decimal list-inside space-y-2">
                         <li>Crear el modelo con camiones como entidades.</li>
-                        <li>Usar un <code>Source</code> para inyectar el número inicial de camiones al inicio de la simulación.</li>
+                        <li>Usar un <code>Source</code> para inyectar el número inicial de camiones al inicio de la simulación (e.g., <code>source.inject(NTrucks)</code>).</li>
                         <li>Diseñar el ciclo del camión en PML: <code>Queue</code> -> <code>Seize</code> (cargadora) -> <code>Delay</code> (carga) -> <code>Release</code> (cargadora) -> <code>Delay</code> (viaje cargado) -> <code>Delay</code> (descarga) -> <code>Delay</code> (viaje vacío).</li>
                         <li>Conectar la salida del último <code>Delay</code> a la entrada de la <code>Queue</code> para cerrar el ciclo.</li>
                         <li>Definir un <code>ResourcePool</code> para las cargadoras.</li>
@@ -231,22 +417,71 @@
                 chartData: {
                     type: 'bar',
                     data: {
-                        labels: ['Tiempo de Carga', 'Viaje Cargado', 'Descarga', 'Viaje Vacío'],
+                        labels: ['Tiempo de Carga (Moda)', 'Viaje Cargado (Prom.)', 'Descarga (Moda)', 'Viaje Vacío (Prom.)'],
                         datasets: [{
-                            label: 'Tiempo Promedio del Ciclo (minutos)',
-                            data: [8.33, 20, 5, 15],
+                            label: 'Tiempos del Ciclo del Camión (minutos)',
+                            data: [8, 20, 5, 15], // Moda para triangular, Promedio para uniforme
                             backgroundColor: ['#f97316', '#0d9488', '#f59e0b', '#14b8a6']
                         }]
                     },
                     options: { maintainAspectRatio: false, indexAxis: 'y', scales: { x: { beginAtZero: true } } }
-                }
+                },
+                isPlaceholder: false
+            },
+            {
+                id: 8,
+                title: "Reto 8: Red Logística",
+                icon: "🌐",
+                description: "Simular una red con fábrica, centros de distribución y clientes.",
+                context: "Modelar una red logística con una fábrica, dos CDs regionales y clientes. Productos se fabrican, envían a CDs (según demanda/inventario), y luego a clientes. Considerar tiempos de transporte y capacidades de vehículos. Objetivos: analizar niveles de inventario, costos de transporte y tiempos de entrega.",
+                dataTable: {
+                    headers: ["Parámetro", "Fábrica", "CD 1", "CD 2", "Unidades"],
+                    rows: [
+                        ["Tasa producción Fábrica", "100", "N/A", "N/A", "unidades/día"],
+                        ["Almacén Fábrica", "1000", "N/A", "N/A", "unidades"],
+                        ["Almacén CD", "N/A", "500", "400", "unidades"],
+                        ["Política envío Fáb. a CD1", "Inv < 100 -> hasta 400", "Inv < 100 -> hasta 400", "N/A", "-"],
+                        ["Política envío Fáb. a CD2", "Inv < 80 -> hasta 300", "N/A", "Inv < 80 -> hasta 300", "-"],
+                        ["Demanda clientes CD1", "N/A", "Poisson (media=40)", "N/A", "unidades/día"],
+                        ["Demanda clientes CD2", "N/A", "N/A", "Poisson (media=30)", "unidades/día"],
+                        ["Tiempo transp. Fáb-CD1", "Uniforme (24, 36)", "N/A", "N/A", "horas"],
+                        ["Tiempo transp. Fáb-CD2", "Uniforme (30, 48)", "N/A", "N/A", "horas"],
+                        ["Capacidad camión Fáb-CD", "200", "N/A", "N/A", "unidades"],
+                        ["Capacidad furgoneta CD-Cli", "N/A", "20", "15", "unidades"],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Combinar PML y modelado basado en agentes. Agentes: <code>Producto</code>, <code>Fabrica</code>, <code>CentroDistribucion</code>, <code>PedidoCliente</code>.</li>
+                        <li><code>Fabrica</code>: produce <code>Producto</code> (<code>Source</code>, <code>Delay</code>) a inventario (<code>Queue</code>). Lógica de envío a CDs.</li>
+                        <li><code>CentroDistribucion</code> (población): recibe de Fábrica, satisface demanda clientes, gestiona su inventario.</li>
+                        <li><code>PedidoCliente</code>: generado por <code>Source</code> en zonas de CD, toma <code>Producto</code> del CD.</li>
+                        <li>Transporte: <code>Delay</code> para tiempos. Considerar capacidad vehículos (agrupar/dividir envíos).</li>
+                        <li>Implementar políticas de inventario (s,S) en Fábrica y CDs.</li>
+                        <li>Métricas: Niveles inventario, costos transporte, tasa cumplimiento pedidos, tiempo entrega.</li>
+                        <li>Experimentar con políticas de inventario o capacidades de transporte.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Almacén Fábrica', 'Almacén CD1', 'Almacén CD2', 'Camión Fáb-CD', 'Furgoneta CD1-Cli', 'Furgoneta CD2-Cli'],
+                        datasets: [{
+                            label: 'Capacidades de Almacenamiento y Transporte (Unidades)',
+                            data: [1000, 500, 400, 200, 20, 15],
+                            backgroundColor: ['#0284c7', '#059669', '#059669', '#7c3aed', '#c026d3', '#c026d3']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
             },
             {
                 id: 9,
                 title: "Reto 9: Políticas de Mantenimiento",
                 icon: "🔧",
                 description: "Analizar y comparar políticas de mantenimiento correctivo vs. preventivo para una flota.",
-                context: "Simular una flota de equipos sujeta a averías. El reto consiste en comparar dos políticas: Mantenimiento Correctivo (reparar solo al fallar) y Mantenimiento Preventivo (revisiones programadas para reducir fallos). El objetivo es evaluar los costos totales (inactividad, reparaciones) y la disponibilidad de la flota bajo cada política. Este problema es ideal para el modelado basado en agentes, donde cada equipo es un agente con su propio estado y ciclo de vida.",
+                context: "Simular una flota de equipos sujeta a averías. Comparar Mantenimiento Correctivo (reparar al fallar) vs. Mantenimiento Preventivo (revisiones programadas). Considerar equipos de reparación limitados. Objetivo: evaluar costos totales (inactividad, reparaciones, preventivo) y disponibilidad de la flota. Ideal para modelado basado en agentes.",
                 dataTable: {
                     headers: ["Parámetro", "Valor / Distribución", "Unidades/Notas"],
                     rows: [
@@ -255,48 +490,87 @@
                         ["Tiempo reparación (correctivo)", "Triangular (8, 12, 24)", "horas"],
                         ["Costo de inactividad", "100", "unidades monetarias/hora"],
                         ["Costo reparación correctiva", "500 + 50/hora", "unidades monetarias"],
-                        ["Intervalo de MP", "200", "horas de uso"],
+                        ["Intervalo de MP", "200", "horas de uso (Política 2)"],
                         ["Tiempo de MP", "Uniforme (4, 6)", "horas"],
                         ["Costo de MP", "200", "unidades monetarias/intervención"],
+                        ["Equipos/cuadrillas reparación", "3", "equipos/cuadrillas"],
                     ]
                 },
                 guide: `
                      <ol class="list-decimal list-inside space-y-2">
-                        <li>Adoptar un enfoque basado en agentes. Definir un agente "Equipo".</li>
-                        <li>Implementar un diagrama de estados (Statechart) en el agente "Equipo": Operando, Fallado, EnReparación, etc.</li>
-                        <li>Usar variables internas para acumular horas de uso y programar el próximo fallo (usando la distribución Weibull).</li>
-                        <li>Modelar los equipos de reparación como un <code>ResourcePool</code>.</li>
-                        <li>Implementar la lógica para las dos políticas (se puede usar un parámetro para cambiar entre ellas).</li>
-                        <li>Cuando un equipo necesita mantenimiento, debe solicitar un recurso del <code>ResourcePool</code>.</li>
-                        <li>Recolectar métricas: costo total, disponibilidad de la flota, número de fallos.</li>
-                        <li>Ejecutar la simulación para ambas políticas y comparar los resultados.</li>
+                        <li>Modelado basado en agentes: <code>Equipo</code>, <code>EquipoReparacion</code>.</li>
+                        <li>Agente <code>Equipo</code>: Statechart (Operando, Fallado, EnReparación, EnMP). Variables: horasUso, tiempoHastaFallo. Lógica para programar fallos (Weibull) y MP. Solicita <code>EquipoReparacion</code>.</li>
+                        <li><code>EquipoReparacion</code>: <code>ResourcePool</code> global o población de agentes.</li>
+                        <li><code>Main</code>: gestiona cola de solicitudes (priorizar correctivas).</li>
+                        <li>Implementar dos escenarios o parámetro para cambiar entre políticas MC y MP.</li>
+                        <li>Métricas: Costo total, disponibilidad flota, nº fallos, utilización equipos reparación.</li>
+                        <li>Comparar resultados de ambas políticas.</li>
                     </ol>
                 `,
                 chartData: {
                     type: 'bar',
                     data: {
-                        labels: ['Costo Fijo Reparación', 'Costo Fijo Mantenimiento Preventivo'],
+                        labels: ['Costo Fijo Reparación Correctiva', 'Costo Mantenimiento Preventivo'],
                         datasets: [{
                             label: 'Comparación de Costos Fijos por Intervención',
-                            data: [500, 200],
+                            data: [500, 200], // Costo fijo de correctiva vs costo de MP
                             backgroundColor: ['#ef4444', '#22c55e']
                         }]
                     },
                     options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: true, text: 'Unidades Monetarias' } } } }
-                }
+                },
+                isPlaceholder: false
             },
+            {
+                id: 10,
+                title: "Reto 10: Rutas de Reparto (GIS)",
+                icon: "🗺️",
+                description: "Optimizar rutas de vehículos de reparto en un área urbana usando mapas GIS.",
+                context: "Planificar rutas para una flota de vehículos que entregan paquetes a clientes en un área urbana. Usar GIS de AnyLogic para ubicaciones (depósito, clientes) y cálculo de rutas. Objetivo: minimizar distancia/tiempo total, considerando capacidad de vehículos. El VRP es complejo; la simulación evalúa heurísticas.",
+                dataTable: {
+                    headers: ["Parámetro", "Valor / Especificación", "Unidades", "Notas"],
+                    rows: [
+                        ["Nº vehículos reparto", "3", "vehículos", ""],
+                        ["Capacidad vehículo", "20", "paquetes", ""],
+                        ["Ubicación depósito", "(Lat, Lon) o Dirección", "-", "Ej: NY"],
+                        ["Nº clientes", "30", "clientes", ""],
+                        ["Ubicaciones clientes", "Lista (Lat, Lon) o Direcciones", "-", "Generar o usar datos"],
+                        ["Pedido cliente", "Uniforme discreto (1, 3)", "paquetes", ""],
+                        ["Tiempo servicio cliente", "Uniforme (5, 10)", "minutos", "Descarga"],
+                        ["Velocidad vehículos", "30 o de ruta GIS", "km/h", ""],
+                        ["Horario operación", "8:00 - 17:00", "-", ""],
+                    ]
+                },
+                guide: `
+                    <ol class="list-decimal list-inside space-y-2">
+                        <li>Integrar mapa GIS en <code>Main</code>. Agentes: <code>Vehiculo</code>, <code>Cliente</code>, <code>Deposito</code>.</li>
+                        <li>Ubicar Depósito y Clientes (población) en mapa GIS con coordenadas.</li>
+                        <li>Agente <code>Vehiculo</code>: inicia en Depósito, lista de clientes/ruta. Usar <code>agent.moveTo(GISNode)</code> o <code>agent.moveTo(lat, lon)</code>.</li>
+                        <li>Lógica de asignación de clientes y secuenciación (VRP):
+                            <ul><li>Simple: heurística voraz (cliente más cercano hasta llenar capacidad).</li>
+                            <li>Avanzado: usar motor optimización AnyLogic para subproblemas o evaluar rutas externas.</li></ul>
+                        </li>
+                        <li>Simular reparto: vehículos viajan, servicio en cliente (<code>Delay</code>), regresan a depósito.</li>
+                        <li>Métricas: Distancia total, tiempo total rutas, paquetes entregados, utilización vehículos.</li>
+                        <li>Experimentar con nº vehículos, capacidades, heurísticas de enrutamiento.</li>
+                    </ol>
+                `,
+                chartData: {
+                    type: 'bar',
+                    data: {
+                        labels: ['Nº Vehículos', 'Capacidad/Vehículo', 'Nº Clientes'],
+                        datasets: [{
+                            label: 'Parámetros Clave de la Flota y Demanda',
+                            data: [3, 20, 30],
+                            backgroundColor: ['#d946ef', '#fde047', '#0ea5e9']
+                        }]
+                    },
+                    options: { maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+                },
+                isPlaceholder: false
+            }
         ];
         
-        const remainingChallenges = [
-            { id: 3, title: "Reto 3: Gestión de Inventario", icon: "📦", description: "Simular una política de inventario (s, S) para un producto perecedero." },
-            { id: 4, title: "Reto 4: Patio de Contenedores", icon: "🚂", description: "Simular operaciones en un patio ferroviario usando la Rail Library." },
-            { id: 5, title: "Reto 5: Call Center", icon: "📞", description: "Diseñar y analizar un centro de atención telefónica con agentes multi-habilidad." },
-            { id: 6, title: "Reto 6: Clínica de Urgencias", icon: "🏥", description: "Modelar el flujo de pacientes en una clínica para optimizar recursos." },
-            { id: 8, title: "Reto 8: Red Logística", icon: "🌐", description: "Simular una red con fábrica, centros de distribución y clientes." },
-            { id: 10, title: "Reto 10: Rutas de Reparto (GIS)", icon: "🗺️", description: "Optimizar rutas de vehículos de reparto en un área urbana usando mapas GIS." }
-        ];
-
-        challengesData.push(...remainingChallenges.map(c => ({...c, isPlaceholder: true})));
         challengesData.sort((a,b) => a.id - b.id);
 
         const challengeGrid = document.getElementById('challenge-grid');
@@ -390,7 +664,7 @@
                     if (index < challenge.diagram.steps.length - 1) {
                          const arrowEl = document.createElement('div');
                          arrowEl.className = 'flow-diagram-arrow';
-                         arrowEl.innerHTML = '&#10230;'; // Right arrow
+                         arrowEl.innerHTML = '&#10230;'; // Right arrow unicode
                          detailDiagram.appendChild(arrowEl);
                     }
                 });
